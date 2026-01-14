@@ -4,7 +4,7 @@ import requests
 import os
 
 # הגדרות
-POWERSHELL_SCRIPT = "get_processes.ps1"
+POWERSHELL_SCRIPT = "get_processes.ps1" #NAME
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "llama3" # וודא שזה המודל שהורדת ב-Ollama
 
