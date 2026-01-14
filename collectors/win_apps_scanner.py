@@ -26,12 +26,7 @@ class WinAppsScanner:
         
         # רשימת תיקיות לחיפוש קבצי exe
         self.file_scan_paths = [
-            r"C:\Program Files",
-            r"C:\Program Files (x86)",
-            os.path.expanduser(r"~\Downloads"),
-            os.path.expanduser(r"~\Desktop"),
-            os.path.expanduser(r"~\AppData\Local"),
-            os.path.expanduser(r"~\AppData\Roaming")
+            os.path.expanduser("~")
         ]
 
     def get_base_name(self, name):
@@ -89,6 +84,7 @@ class WinAppsScanner:
                                     "publisher": self._get_registry_value(app_key, "Publisher") or "Unknown",
                                     "install_date": self._get_registry_value(app_key, "InstallDate") or "Unknown",
                                     "uninstall_string": self._get_registry_value(app_key, "UninstallString"),
+                                    "install_location": self._get_registry_value(app_key, "InstallLocation") or "Unknown",
                                     "source_registry": sub_key_path
                                 }
 
@@ -119,6 +115,7 @@ class WinAppsScanner:
                                 "publisher": "Unknown",
                                 "install_date": "Unknown",
                                 "uninstall_string": None,
+                                "install_location": full_path,
                                 "source_registry": f"Filesystem: {full_path}"
                             }
                             # בדיקת כפילויות (לפי שם + filesystem)
