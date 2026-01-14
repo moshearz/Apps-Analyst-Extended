@@ -1,6 +1,8 @@
 import winreg
 import logging
 from datetime import datetime
+import os
+from collections import defaultdict
 
 # מנסים לייבא את ה-logger של הפרוייקט, אם נכשל (בהרצה עצמאית) מגדירים logger בסיסי
 try:
@@ -21,6 +23,26 @@ class WinAppsScanner:
             # תוכנות שהותקנו עבור המשתמש הנוכחי בלבד (User Specific)
             (winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Uninstall")
         ]
+        
+        # רשימת תיקיות לחיפוש קבצי exe
+        self.file_scan_paths = [
+            r"C:\Program Files",
+            r"C:\Program Files (x86)",
+            os.path.expanduser(r"~\Downloads"),
+            os.path.expanduser(r"~\Desktop"),
+            os.path.expanduser(r"~\AppData\Local"),
+            os.path.expanduser(r"~\AppData\Roaming")
+        ]
+
+    def get_base_name(self, name):
+        """פונקציה לחילוץ שם בסיס לתצוגה מקובצת"""
+        parts = name.split()
+        if len(parts) >= 2 and any(c.isdigit() for c in parts[1]):
+            # אם החלק השני מכיל ספרות (גרסה), קח את שני החלקים הראשונים
+            return ' '.join(parts[:2])
+        else:
+            # אחרת, קח את המילה הראשונה
+            return parts[0]
 
     def _get_registry_value(self, key, value_name):
         """פונקציית עזר לשליפת ערך בטוחה מה-Registry"""
@@ -83,7 +105,31 @@ class WinAppsScanner:
             except OSError as e:
                 logger.error(f"Failed to access registry path {sub_key_path}: {e}")
 
-        logger.info(f"Scan complete. Found {len(installed_apps)} applications.")
+        # סריקת קבצי exe במערכת הקבצים
+        logger.info("Starting filesystem scan for exe files...")
+        for path in self.file_scan_paths:
+            try:
+                for root, dirs, files in os.walk(path):
+                    for file in files:
+                        if file.lower().endswith('.exe'):
+                            full_path = os.path.join(root, file)
+                            app_info = {
+                                "name": os.path.splitext(file)[0],  # שם הקובץ ללא .exe
+                                "version": "Unknown",
+                                "publisher": "Unknown",
+                                "install_date": "Unknown",
+                                "uninstall_string": None,
+                                "source_registry": f"Filesystem: {full_path}"
+                            }
+                            # בדיקת כפילויות (לפי שם + filesystem)
+                            app_id = f"{app_info['name']}_filesystem"
+                            if app_id not in seen_apps:
+                                installed_apps.append(app_info)
+                                seen_apps.add(app_id)
+            except OSError as e:
+                logger.warning(f"Failed to scan path {path}: {e}")
+
+        logger.info(f"Scan complete. Found {len(installed_apps)} applications and exe files.")
         return installed_apps
 
 # בלוק לבדיקה עצמאית של הקובץ (כשמריצים אותו ישירות)
@@ -91,7 +137,24 @@ if __name__ == "__main__":
     scanner = WinAppsScanner()
     apps = scanner.scan()
     
-    print(f"\n--- Found {len(apps)} Applications ---")
-    # הדפסה של 10 התוצאות הראשונות לדוגמה
-    for app in apps[:10]:
-        print(f"[*] {app['name']} (v{app['version']}) - {app['publisher']}")
+    # קיבוץ יישומים לפי שם בסיס
+    grouped = defaultdict(list)
+    for app in apps:
+        base = scanner.get_base_name(app['name'])
+        grouped[base].append(app)
+    
+    print(f"\n--- Found {len(grouped)} Application Groups ---")
+    # הדפסה של שמות הבסיס בלבד
+    for base in sorted(grouped.keys()):
+        print(f"[*] {base}")
+    
+    # שמירה לקובץ טקסט בתיקיית output
+    output_dir = os.path.join(os.path.dirname(__file__), "..", "output")
+    os.makedirs(output_dir, exist_ok=True)
+    output_file = os.path.join(output_dir, "installed_apps.txt")
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(f"Found {len(grouped)} Application Groups\n\n")
+        for base in sorted(grouped.keys()):
+            f.write(f"[*] {base}\n")
+    
+    print(f"\nGrouped list saved to {output_file}")
