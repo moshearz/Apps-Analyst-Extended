@@ -1,6 +1,8 @@
 # Apps-analyst - Project Overview
 This project is meant to solve the problem of people being uninformed about the programs that are installed on their computer or extentions on their browser. By creating awareness we hope to help fortify the cybernetic space against common cyber crimes.
 
+NOTE: THIS PROJECT NOT MEANT TO BE A REPLACEMENT FOR PROFESSIONAL ANTIVIRUS SOFTWARE. IT IS A PROOF OF CONCEPT TOOL TO DEMONSTRATE THE IMPORTANCE OF SOFTWARE VISIBILITY AND AWARENESS, AND MOST IMPORTANCE THAT THE END USER IS EDUCATED ABOUT THE PROGRAMS THEY RUN ON THEIR MACHINE AND THE RISKS INVOLVED.
+
 ## How to use Apps-analyst | Quick Start Guide
 1. Clone the repository to your local machine. 
 2. Install Ollama and download ?
