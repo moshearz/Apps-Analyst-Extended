@@ -1,23 +1,41 @@
-import logging
-from utils.logger import setup_logger
-from config import load_config
+# from config import load_config
 
 def main():
-    logger = setup_logger()
-    logger.info("Starting AppsAnalyst...")
+    print("[*] Starting AppsAnalyst...")
     # 0. Install and Setup LLM
-    from utils.llm_setup import check_and_pull_model
-    if not check_and_pull_model("ministral-3:3b"):
-        logger.error("LLM model setup failed. Exiting.")
-        return
-    logger.info("LLM model is ready.")
+    # from utils.llm_setup import check_and_pull_model
+    # if not check_and_pull_model("gemma3:1b"):
+    #     print("[!] LLM model setup failed. Exiting.")
+    #     return
+    # print("[v] LLM model is ready.")
     
     # 1. Load Config
-    # 2. Run Collectors
-    # 3. Run Analysis
-    # 4. Generate Report
 
-    logger.info("Scan completed.")
+    # 2. Run file and registry scanners
+    # from collectors.win_apps_scanner import WinAppsScanner
+    # scanner = WinAppsScanner()
+    # apps = scanner.scan_apps()
+    # print(f"[*] Found {len(apps)} apps.")
+
+    # 3. show user and ask which app to analyze
+    #for testing apps only contains the app name "teamviewer":
+    apps = [{"name": "TeamViewer"}]
+    
+    # 4. Run web researcher
+    from analysis.web_researcher import search_web_info
+    app_to_analyze = apps[0] if apps else None
+    if app_to_analyze:
+        print(f"[*] Analyzing app: {app_to_analyze['name']}")
+        web_info = search_web_info(app_to_analyze['name'])
+        print(f"[v] Web info collected for {app_to_analyze['name']}.")
+        # 5. Run LLM analysis
+        from analysis.llm_analyzer import sendToOllama
+        llm_result = sendToOllama(web_info)
+        print("[v] LLM analysis completed.")
+    else:
+        print("[!] No apps found to analyze.")
+
+    print("[v] Scan completed.")
 
 if __name__ == "__main__":
     main()

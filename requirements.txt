@@ -2,4 +2,5 @@ requests
 pyyaml
 beautifulsoup4
 wmi
-# Add your local LLM library here (e.g., openai, ollama)
+ollama
+ddgs

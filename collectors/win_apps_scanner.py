@@ -1,16 +1,7 @@
 import winreg
-import logging
 from datetime import datetime
 import os
 from collections import defaultdict
-
-# מנסים לייבא את ה-logger של הפרוייקט, אם נכשל (בהרצה עצמאית) מגדירים logger בסיסי
-try:
-    from utils.logger import setup_logger
-    logger = setup_logger()
-except ImportError:
-    logging.basicConfig(level=logging.INFO)
-    logger = logging.getLogger("WinAppsScanner")
 
 class WinAppsScanner:
     def __init__(self):
@@ -54,7 +45,7 @@ class WinAppsScanner:
         installed_apps = []
         seen_apps = set() # למניעת כפילויות
 
-        logger.info("Starting Windows apps scan...")
+        print("[*] Starting Windows apps scan...")
 
         for hive, sub_key_path in self.registry_paths:
             try:
@@ -99,10 +90,10 @@ class WinAppsScanner:
                             continue
                             
             except OSError as e:
-                logger.error(f"Failed to access registry path {sub_key_path}: {e}")
+                print(f"[!] Failed to access registry path {sub_key_path}: {e}")
 
         # סריקת קבצי exe במערכת הקבצים
-        logger.info("Starting filesystem scan for exe files...")
+        print("[*] Starting filesystem scan for exe files...")
         for path in self.file_scan_paths:
             try:
                 for root, dirs, files in os.walk(path):
@@ -124,9 +115,9 @@ class WinAppsScanner:
                                 installed_apps.append(app_info)
                                 seen_apps.add(app_id)
             except OSError as e:
-                logger.warning(f"Failed to scan path {path}: {e}")
+                print(f"[!] Failed to scan path {path}: {e}")
 
-        logger.info(f"Scan complete. Found {len(installed_apps)} applications and exe files.")
+        print(f"[v] Scan complete. Found {len(installed_apps)} applications and exe files.")
         return installed_apps
 
 # בלוק לבדיקה עצמאית של הקובץ (כשמריצים אותו ישירות)
