@@ -20,6 +20,26 @@ Server Hosting: [yes/no]"""
     except Exception as e:
         print(f"Error communicating with Ollama: {e}")
         return None
-def parseOllamaRes(app_data, web_data):
-    # TODO: Send data to Local LLM for risk assessment
-    pass
+def parseOllamaRes(ollama_response):
+    """
+    Parse Ollama response and extract boolean values for risk categories.
+    Returns a vector of 4 booleans: [Remote Administration, Remote File Sharing, Keylogging, Server Hosting]
+    """
+    # Initialize with False values
+    result_vector = [False, False, False, False]
+    
+    # Define the keys to search for (in order)
+    keys = ["Remote Administration", "Remote File Sharing", "Keylogging", "Server Hosting"]
+    
+    # Parse each line to find yes/no values
+    for i, key in enumerate(keys):
+        for line in ollama_response.split('\n'):
+            if key in line:
+                # Extract yes/no value from the line
+                if 'yes' in line.lower():
+                    result_vector[i] = True
+                elif 'no' in line.lower():
+                    result_vector[i] = False
+                break
+    
+    return result_vector

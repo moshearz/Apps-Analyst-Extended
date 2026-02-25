@@ -29,8 +29,11 @@ def main():
         web_info = search_web_info(app_to_analyze['name'])
         print(f"[v] Web info collected for {app_to_analyze['name']}.")
         # 5. Run LLM analysis
-        from analysis.llm_analyzer import sendToOllama
+        from analysis.llm_analyzer import sendToOllama, parseOllamaRes
         llm_result = sendToOllama(web_info)
+        if llm_result:
+            risk_vector = parseOllamaRes(llm_result)
+            print(f"[v] Risk Assessment Vector: {risk_vector}")
         print("[v] LLM analysis completed.")
     else:
         print("[!] No apps found to analyze.")
