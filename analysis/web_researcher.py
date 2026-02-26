@@ -12,7 +12,7 @@ def search_web_info(app_name):
         for r in results:
             extracted_info += f"- Title: {r['title']}\n"
             extracted_info += f"  Info: {r['body']}\n\n"
-            
+        print(f"Extracted Web Info:\n{extracted_info}")
         return extracted_info
 
 # בדיקה

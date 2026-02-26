@@ -40,12 +40,16 @@ class WinAppsScanner:
 
     def scan(self):
         """
-        הפונקציה הראשית שמבצעת את הסריקה ומחזירה רשימת תוכנות.
+        הפונקציה הראשית שמבצעת את הסריקה ומחזירה שתי רשימות:
+        - תוכנות מתוך ה-Registry
+        - קבצי exe שנמצאו במערכת הקבצים
+        כל רשימה היא מערך של dict עם מידע על האפליקציה.
         """
-        installed_apps = []
-        seen_apps = set() # למניעת כפילויות
+        registry_apps = []
+        exe_apps = []
+        seen_apps = set()  # למניעת כפילויות כלליות
 
-        print("[*] Starting Windows apps scan...")
+        print("[*] Starting Windows apps scan (registry)...")
 
         for hive, sub_key_path in self.registry_paths:
             try:
@@ -64,11 +68,9 @@ class WinAppsScanner:
                                 # שליפת נתונים רלוונטיים
                                 display_name = self._get_registry_value(app_key, "DisplayName")
                                 
-                                # אנחנו מעוניינים רק ברשומות שיש להן שם תצוגה
                                 if not display_name:
                                     continue
 
-                                # יצירת אובייקט מידע
                                 app_info = {
                                     "name": display_name,
                                     "version": self._get_registry_value(app_key, "DisplayVersion") or "Unknown",
@@ -79,14 +81,12 @@ class WinAppsScanner:
                                     "source_registry": sub_key_path
                                 }
 
-                                # בדיקת כפילויות (לפי שם + גרסה)
                                 app_id = f"{app_info['name']}_{app_info['version']}"
                                 if app_id not in seen_apps:
-                                    installed_apps.append(app_info)
+                                    registry_apps.append(app_info)
                                     seen_apps.add(app_id)
 
                         except OSError:
-                            # התעלמות ממפתחות שלא ניתן לקרוא
                             continue
                             
             except OSError as e:
@@ -101,7 +101,7 @@ class WinAppsScanner:
                         if file.lower().endswith('.exe'):
                             full_path = os.path.join(root, file)
                             app_info = {
-                                "name": os.path.splitext(file)[0],  # שם הקובץ ללא .exe
+                                "name": os.path.splitext(file)[0],
                                 "version": "Unknown",
                                 "publisher": "Unknown",
                                 "install_date": "Unknown",
@@ -109,32 +109,33 @@ class WinAppsScanner:
                                 "install_location": full_path,
                                 "source_registry": f"Filesystem: {full_path}"
                             }
-                            # בדיקת כפילויות (לפי שם + filesystem)
                             app_id = f"{app_info['name']}_filesystem"
                             if app_id not in seen_apps:
-                                installed_apps.append(app_info)
+                                exe_apps.append(app_info)
                                 seen_apps.add(app_id)
             except OSError as e:
                 print(f"[!] Failed to scan path {path}: {e}")
 
-        print(f"[v] Scan complete. Found {len(installed_apps)} applications and exe files.")
-        return installed_apps
+        print(f"[v] Scan complete. Found {len(registry_apps)} registry apps and {len(exe_apps)} exe files.")
+        return registry_apps, exe_apps
 
 # בלוק לבדיקה עצמאית של הקובץ (כשמריצים אותו ישירות)
 if __name__ == "__main__":
     scanner = WinAppsScanner()
-    apps = scanner.scan()
-    
-    # קיבוץ יישומים לפי שם בסיס
+    registry, exe = scanner.scan()
+
+    print(f"\n--- Registry Apps ({len(registry)}) ---")
+    for idx, app in enumerate(registry, start=1):
+        print(f"{idx}. {app['name']}")
+    print(f"\n--- EXE Files ({len(exe)}) ---")
+    for idx, app in enumerate(exe, start=1):
+        print(f"{idx}. {app['name']}")
+
+    # קיבוץ יישומים לפי שם בסיס (on registry only)
     grouped = defaultdict(list)
-    for app in apps:
+    for app in registry:
         base = scanner.get_base_name(app['name'])
         grouped[base].append(app)
-    
-    print(f"\n--- Found {len(grouped)} Application Groups ---")
-    # הדפסה של שמות הבסיס בלבד
-    for base in sorted(grouped.keys()):
-        print(f"[*] {base}")
     
     # שמירה לקובץ טקסט בתיקיית output
     output_dir = os.path.join(os.path.dirname(__file__), "..", "output")
