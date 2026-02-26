@@ -229,10 +229,8 @@ class AppsAnalystGUI:
     
     def analyze_next(self):
         if self.analyzing_index >= len(self.selected_apps):
-            self.append_result("=" * 60)
-            self.append_result("✓ All selected programs analyzed!")
-            self.append_result("=" * 60)
-            self.stop_loading(kind="analysis")
+            # All analyses complete; generate and display final report
+            self.root.after(0, self._generate_final_report)
             return
         
         app = self.selected_apps[self.analyzing_index]
@@ -241,6 +239,38 @@ class AppsAnalystGUI:
         thread = threading.Thread(target=self._run_analysis, args=(app,))
         thread.daemon = True
         thread.start()
+    
+    def _generate_final_report(self):
+        """Generate a final summary report grouped by risk category."""
+        self.append_result("\n")
+        self.append_result("=" * 70)
+        self.append_result("FINAL SECURITY REPORT")
+        self.append_result("=" * 70)
+        
+        # Risk categories in order
+        risk_labels = ["Remote Administration", "Remote File Sharing", "Keylogging", "Server Hosting"]
+        risk_indices = [0, 1, 2, 3]
+        
+        # For each risk category, find all apps flagged as positive
+        for label, idx in zip(risk_labels, risk_indices):
+            flagged_apps = [
+                result["name"] for result in self.analysis_results
+                if result.get("risk_vector", [False]*4)[idx]
+            ]
+            
+            # Display risk category section
+            self.append_result(f"\n[{label}]")
+            if flagged_apps:
+                self.append_result(f"  Status: FLAGGED - {len(flagged_apps)} app(s) detected")
+                for app_name in flagged_apps:
+                    self.append_result(f"    • {app_name}")
+            else:
+                self.append_result(f"  Status: CLEAR - No apps detected with this capability")
+        
+        self.append_result("\n" + "=" * 70)
+        self.append_result("✓ Analysis complete")
+        self.append_result("=" * 70)
+        self.stop_loading(kind="analysis")
     
     def _run_analysis(self, app):
         try:

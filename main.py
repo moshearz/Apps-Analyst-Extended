@@ -1,7 +1,7 @@
 # from config import load_config
 
 # dummy constants for debug substitutions
-DUMMY_REGISTRY_APPS = [{"name": "DummyApp", "version": "1.0"}]
+DUMMY_REGISTRY_APPS = [{"name": "checkpointVPN", "version": "1.0"},{"name": "teamviewer", "version": "1.0"}, {"name": "vnc", "version": "2.0"}]
 DUMMY_EXE_APPS = [{"name": "dummy.exe", "install_location": "C:\\dummy.exe"}]
 DUMMY_WEB_INFO = "- Title: Dummy\n  Info: No real data\n"
 DUMMY_LLM_RESPONSE = "Remote Administration: no\nRemote File Sharing: no\nKeylogging: no\nServer Hosting: no"
@@ -74,14 +74,16 @@ def main():
     # step 1: load configuration (not implemented yet)
 
     # step 2: scan registry and filesystem for apps
-    registry_apps, exe_apps = scan_apps()    
+    # registry_apps, exe_apps = scan_apps()    
     # Uncomment to skip step 2: 
     # registry_apps, exe_apps = DUMMY_REGISTRY_APPS, DUMMY_EXE_APPS
 
     # step 3: let user pick an application to analyze
-    app_to_analyze = select_app(registry_apps, exe_apps)  # or: app_to_analyze = registry_apps[0]
+    # app_to_analyze = select_app(registry_apps, exe_apps)  # or: app_to_analyze = registry_apps[0]
     # Uncomment to skip step 3: 
-    # app_to_analyze = DUMMY_REGISTRY_APPS[0]
+    app_to_analyze = DUMMY_REGISTRY_APPS[0]
+    #or all of the dumm apps:
+    
     
 
     if app_to_analyze:
