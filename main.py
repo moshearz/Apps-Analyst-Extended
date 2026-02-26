@@ -103,4 +103,10 @@ def main():
     print("[v] Scan completed.")
 
 if __name__ == "__main__":
-    main()
+    import sys
+    
+    if len(sys.argv) > 1 and sys.argv[1] == "--gui":
+        from gui import run_gui
+        run_gui()
+    else:
+        main()
