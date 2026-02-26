@@ -2,8 +2,7 @@ def sendToOllama(web_data):
     import ollama
     
     # Create the prompt with the specified prefix and web search data
-    prefix = """The following text is a google search result of a single app name. based on the following google search output, does this program allow remote administration (as in remote desktop) and/or remote file sharing (like filezilla), and/or keylogging and/or server hosting?
-answer in the following format:
+    prefix = """The following text is a google search result of a single app name. based on the following google search output, Based ONLY on the provided text, determine if the program has the following capabilities built-in: remote access (allowing to traverse the file system, upload and download files executing programs) and/or remote file sharing (like filezilla), and/or keylogging (a process that records in the background every keystroke on the keyboard) and/or server hosting (like a webite the serves some files and may allow to execute some files or upload them). if it is not mentioned in the text, assume it does not have the capability. answer in the following format:
 Remote Administration: [yes/no]
 Remote File Sharing: [yes/no]
 Keylogging: [yes/no]
