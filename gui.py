@@ -9,23 +9,33 @@ class AppsAnalystGUI:
         self.root = root
         self.root.title("Apps Analyst - Security Scanner")
         self.root.geometry("900x700")
-        
+
+        # configure grid weights for sections (rows 0..4)
+        # rows: 0=scan (~1/4), 1=selection (~1/3), 2=analyze button (fixed),
+        # 3=results (~1/3), 4=bottom controls (fixed)
+        self.root.grid_columnconfigure(0, weight=1)
+        self.root.grid_rowconfigure(0, weight=2)
+        self.root.grid_rowconfigure(1, weight=4)
+        self.root.grid_rowconfigure(2, weight=0)
+        self.root.grid_rowconfigure(3, weight=4)
+        self.root.grid_rowconfigure(4, weight=0)
+
         self.registry_apps = []
         self.exe_apps = []
         self.selected_apps = []
         self.analysis_results = []
         self.scanning = False
         self.analyzing = False
-        
+
         self.setup_ui()
     
     def setup_ui(self):
         # === SCAN SECTION ===
         scan_frame = ttk.LabelFrame(self.root, text="Step 1: Scan System", padding=10)
         # keep the scan section compact so lower sections get more vertical space
-        scan_frame.pack(fill=tk.X, padx=10, pady=10)
+        scan_frame.grid(row=0, column=0, sticky="nsew", padx=6, pady=6)
         scan_frame.pack_propagate(False)
-        # slightly larger to fit two checkboxes comfortably
+        # slightly larger to fit two checkboxes comfortably (trim margins)
         scan_frame.configure(height=120)
         
         # Checkboxes for scan options placed on the left, big SCAN button on the right
@@ -33,18 +43,18 @@ class AppsAnalystGUI:
         self.check_exe = tk.BooleanVar(value=True)
 
         options_frame = ttk.Frame(scan_frame)
-        options_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5,10), pady=8)
+        options_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(2,6), pady=4)
 
         ttk.Checkbutton(options_frame, text="Scan Installed Programs (Registry)", 
-                   variable=self.check_registry).pack(anchor=tk.W, pady=2)
+               variable=self.check_registry).pack(anchor=tk.W, pady=1)
         ttk.Checkbutton(options_frame, text="Scan Executable Files (Filesystem)", 
-                   variable=self.check_exe).pack(anchor=tk.W, pady=2)
+               variable=self.check_exe).pack(anchor=tk.W, pady=1)
 
         # Blue scan button to the right
-        scan_btn = tk.Button(scan_frame, text="SCAN", bg="#0066CC", fg="white", 
-                    font=("Arial", 14, "bold"), command=self.on_scan_clicked,
-                    padx=24, pady=12)
-        scan_btn.pack(side=tk.RIGHT, padx=10, pady=8)
+        scan_btn = tk.Button(scan_frame, text="SCAN", bg="#0066CC", fg="white",
+                font=("Arial", 18, "bold"), command=self.on_scan_clicked,
+                width=14, padx=10, pady=12)
+        scan_btn.pack(side=tk.RIGHT, padx=6, pady=6)
 
         # status label under options (left)
         self.scan_status = tk.Label(scan_frame, text="", fg="blue")
@@ -52,7 +62,7 @@ class AppsAnalystGUI:
         
         # === RESULTS SECTION ===
         results_frame = ttk.LabelFrame(self.root, text="Step 2: Select Programs to Analyze", padding=10)
-        results_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        results_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
         
         # Search bar for filtering results
         search_frame = ttk.Frame(results_frame)
@@ -81,31 +91,19 @@ class AppsAnalystGUI:
         canvas.pack(side="left", fill=tk.BOTH, expand=True)
         scrollbar.pack(side="right", fill="y")
         
-        # === CONTROL SECTION ===
-        control_frame = ttk.Frame(self.root)
-        control_frame.pack(fill=tk.X, padx=10, pady=10)
-        
-        analyze_btn = tk.Button(control_frame, text="Analyze Selected", bg="#00AA00", 
-                               fg="white", font=("Arial", 10, "bold"),
-                               command=self.on_analyze_clicked, padx=15, pady=8)
-        analyze_btn.pack(side=tk.LEFT, padx=5)
-        
-        clear_btn = tk.Button(control_frame, text="Clear Results", 
-                             command=self.on_clear_clicked, padx=15, pady=8)
-        clear_btn.pack(side=tk.LEFT, padx=5)
-        
-        export_pdf_btn = tk.Button(control_frame, text="Export PDF", 
-                       command=self.on_export_pdf, padx=15, pady=8)
-        export_pdf_btn.pack(side=tk.LEFT, padx=5)
-
-        export_csv_btn = tk.Button(control_frame, text="Export CSV", 
-                       command=self.on_export_csv, padx=15, pady=8)
-        export_csv_btn.pack(side=tk.LEFT, padx=5)
+        # place the analyze button on the main grid at row 2 so it stays visible
+        # analyze button: put in its own row so it sizes to its text and centers
+        analyze_container = ttk.Frame(self.root)
+        analyze_container.grid(row=2, column=0, sticky="nsew", padx=10)
+        analyze_container.columnconfigure(0, weight=1)
+        analyze_btn = tk.Button(analyze_container, text="Analyze Selected", bg="#00AA00",
+                   fg="white", font=("Arial", 12, "bold"),
+                   command=self.on_analyze_clicked)
+        analyze_btn.pack(anchor="center", pady=6)
         
         # === RESULTS DISPLAY ===
         results_display_frame = ttk.LabelFrame(self.root, text="Analysis Results", padding=10)
-        # reserve at least 30% of the window height for this results area
-        results_display_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        results_display_frame.grid(row=3, column=0, sticky="nsew", padx=10, pady=10)
         results_display_frame.pack_propagate(False)
         self.results_display_frame = results_display_frame
 
@@ -120,6 +118,19 @@ class AppsAnalystGUI:
         # Analysis/loading status label
         self.analysis_status = tk.Label(results_display_frame, text="", fg="blue")
         self.analysis_status.pack(anchor=tk.W)
+        
+        # bottom controls under results display
+        bottom_frame = ttk.Frame(self.root)
+        bottom_frame.grid(row=4, column=0, sticky="ew", padx=10, pady=10)
+        clear_btn = tk.Button(bottom_frame, text="Clear Results", 
+                             command=self.on_clear_clicked, padx=15, pady=8)
+        clear_btn.pack(side=tk.LEFT, padx=5)
+        export_pdf_btn = tk.Button(bottom_frame, text="Export PDF", 
+                       command=self.on_export_pdf, padx=15, pady=8)
+        export_pdf_btn.pack(side=tk.LEFT, padx=5)
+        export_csv_btn = tk.Button(bottom_frame, text="Export CSV", 
+                       command=self.on_export_csv, padx=15, pady=8)
+        export_csv_btn.pack(side=tk.LEFT, padx=5)
     
     def on_scan_clicked(self):
         if self.scanning:
@@ -204,7 +215,7 @@ class AppsAnalystGUI:
         self.stop_loading(kind="scan")
     
     def on_analyze_clicked(self):
-
+        
         selected = [app for var, app, _ in self.app_vars.values() if var.get()]
         
         if not selected:
