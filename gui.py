@@ -224,8 +224,29 @@ class AppsAnalystGUI:
         
         self.selected_apps = selected
         self.analyzing_index = 0
-        self.analyze_next()
+        # Initialize LLM before starting analysis
+        self.append_result("[*] Initializing LLM...")
+        thread = threading.Thread(target=self._initialize_and_analyze)
+        thread.daemon = True
+        thread.start()
         self.start_loading(kind="analysis")
+    
+    def _initialize_and_analyze(self):
+        """Initialize LLM, then proceed with analysis if successful"""
+        try:
+            from main import setup_llm
+            if setup_llm():
+                self.root.after(0, self.analyze_next)
+            else:
+                self.root.after(0, lambda: (
+                    self.append_result("[!] Failed to initialize LLM"),
+                    self.stop_loading(kind="analysis")
+                ))
+        except Exception as e:
+            self.root.after(0, lambda: (
+                self.append_result(f"[!] LLM initialization error: {str(e)}"),
+                self.stop_loading(kind="analysis")
+            ))
     
     def analyze_next(self):
         if self.analyzing_index >= len(self.selected_apps):

@@ -8,10 +8,10 @@ DUMMY_LLM_RESPONSE = "Remote Administration: no\nRemote File Sharing: no\nKeylog
 
 
 def setup_llm():
-    # placeholder: perform any initialization needed for local LLM
-    # return True if ready, False otherwise
-    print("[i] setup_llm() called")
-    return True
+    # Initialize LLM: check and pull model if needed
+    from utils.llm_setup import check_and_pull_model
+    print("[i] Setting up LLM...")
+    return check_and_pull_model()
 
 
 def scan_apps():

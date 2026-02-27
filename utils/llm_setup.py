@@ -5,11 +5,32 @@ from tqdm import tqdm  # ספרייה לפס התקדמות (pip install tqdm)
 
 logger = logging.getLogger("LLM_Setup")
 
-def check_and_pull_model(model_name="ministral-3:3b"):
+# Extract model name from llm_analyzer to ensure consistency
+def get_model_from_analyzer():
+    """Extract the model name used in llm_analyzer.py"""
+    try:
+        from analysis.llm_analyzer import sendToOllama
+        import inspect
+        source = inspect.getsource(sendToOllama)
+        # Look for model="..." in the source code
+        import re
+        match = re.search(r'model="([^"]+)"', source)
+        if match:
+            return match.group(1)
+    except Exception:
+        pass
+    return "llama3.2:1b"  # Fallback to the default used in llm_analyzer
+
+def check_and_pull_model(model_name=None):
     """
     בודק אם המודל קיים. אם לא - מוריד אותו אוטומטית.
     אם Ollama לא מותקן - מתריע למשתמש.
+    אם לא מסופק model_name - משולף אותו מ-llm_analyzer
     """
+    # If no model specified, extract from llm_analyzer
+    if model_name is None:
+        model_name = get_model_from_analyzer()
+    
     print(f"[*] Checking for LLM model: {model_name}...")
 
     # 1. בדיקה האם Ollama בכלל רץ
