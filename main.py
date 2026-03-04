@@ -1,3 +1,6 @@
+import sys
+import subprocess
+
 # from config import load_config
 import sys
 import subprocess
@@ -41,19 +44,25 @@ def install_missing_requirements():
     requirements_file = "requirements.txt"
     
     try:
-        # קריאת הדרישות מהקובץ
         with open(requirements_file, "r") as f:
             requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
         
-        # זיהוי חבילות חסרות
         missing = []
         for requirement in requirements:
+            # Extract package name (handle ==, >=, <= operators)
+            pkg_name = requirement.split("==")[0].split(">=")[0].split("<=")[0].strip()
+            
             try:
-                pkg_resources.require(requirement)
-            except (pkg_resources.DistributionNotFound, pkg_resources.VersionConflict):
+                # Try importlib.metadata first (Python 3.8+)
+                try:
+                    from importlib import metadata
+                    metadata.version(pkg_name)
+                except (ImportError, Exception):
+                    # Fallback: try direct import
+                    __import__(pkg_name)
+            except Exception:
                 missing.append(requirement)
         
-        # התקנת החסר
         if missing:
             print(f"[*] Missing packages found: {missing}. Installing...")
             subprocess.check_call([sys.executable, "-m", "pip", "install", *missing])

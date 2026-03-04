@@ -5,3 +5,4 @@ wmi
 ollama
 ddgs
 tqdm
+reportlab

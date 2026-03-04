@@ -4,7 +4,6 @@ import threading
 from main import scan_apps, research_web, run_llm, parse_result, install_missing_requirements
 import sys
 import subprocess
-import pkg_resources
 
 
 class AppsAnalystGUI:
