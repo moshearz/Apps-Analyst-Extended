@@ -1,7 +1,6 @@
 # from config import load_config
 
 # dummy constants for debug substitutions
-from gui import install_missing_requirements
 
 
 DUMMY_REGISTRY_APPS = [{"name": "checkpointVPN", "version": "1.0"},{"name": "teamviewer", "version": "1.0"}, {"name": "vnc", "version": "2.0"}]
@@ -9,6 +8,35 @@ DUMMY_EXE_APPS = [{"name": "dummy.exe", "install_location": "C:\\dummy.exe"}]
 DUMMY_WEB_INFO = "- Title: Dummy\n  Info: No real data\n"
 DUMMY_LLM_RESPONSE = "Remote Administration: no\nRemote File Sharing: no\nKeylogging: no\nServer Hosting: no"
 
+def install_missing_requirements():
+    """בודק אם כל החבילות ב-requirements.txt מותקנות, ואם לא - מתקין אותן."""
+    requirements_file = "requirements.txt"
+    
+    try:
+        # קריאת הדרישות מהקובץ
+        with open(requirements_file, "r") as f:
+            requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+        
+        # זיהוי חבילות חסרות
+        missing = []
+        for requirement in requirements:
+            try:
+                pkg_resources.require(requirement)
+            except (pkg_resources.DistributionNotFound, pkg_resources.VersionConflict):
+                missing.append(requirement)
+        
+        # התקנת החסר
+        if missing:
+            print(f"[*] Missing packages found: {missing}. Installing...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", *missing])
+            print("[*] All packages installed successfully.")
+        else:
+            print("[*] All requirements are already met.")
+            
+    except FileNotFoundError:
+        print("[!] requirements.txt not found. Skipping auto-install.")
+    except Exception as e:
+        print(f"[!] Auto-install failed: {e}")
 
 def setup_llm():
     # Initialize LLM: check and pull model if needed
