@@ -1,6 +1,9 @@
 # from config import load_config
 
 # dummy constants for debug substitutions
+from gui import install_missing_requirements
+
+
 DUMMY_REGISTRY_APPS = [{"name": "checkpointVPN", "version": "1.0"},{"name": "teamviewer", "version": "1.0"}, {"name": "vnc", "version": "2.0"}]
 DUMMY_EXE_APPS = [{"name": "dummy.exe", "install_location": "C:\\dummy.exe"}]
 DUMMY_WEB_INFO = "- Title: Dummy\n  Info: No real data\n"
@@ -111,4 +114,5 @@ if __name__ == "__main__":
         from gui import run_gui
         run_gui()
     else:
+        install_missing_requirements()
         main()
