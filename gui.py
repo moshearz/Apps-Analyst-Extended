@@ -275,35 +275,59 @@ class AppsAnalystGUI:
         thread.start()
     
     def _generate_final_report(self):
-        """Generate a final summary report grouped by risk category."""
-        self.append_result("\n")
-        self.append_result("=" * 70)
+        """Generate a final summary report grouped by risk category with specific warnings."""
+        self.append_result("\n" + "=" * 70)
         self.append_result("FINAL SECURITY REPORT")
-        self.append_result("=" * 70)
+        self.append_result("=" * 70 + "\n")
         
-        # Risk categories in order
-        risk_labels = ["Remote Administration", "Remote File Sharing", "Keylogging", "Server Hosting"]
-        risk_indices = [0, 1, 2, 3]
-        
-        # For each risk category, find all apps flagged as positive
-        for label, idx in zip(risk_labels, risk_indices):
+        # Define the categories, their index in the risk_vector, and their specific descriptions
+        categories = [
+            {
+                "title": "Applications suspected as Remote administration tools:",
+                "index": 0,
+                "warning": "These apps might allow someone to view your screen, control your mouse, keyboard, and even disable your input, as well as give them full access to your files and download new files to your computer."
+            },
+            {
+                "title": "Applications suspected as Remote File Sharing tools:",
+                "index": 1,
+                "warning": "These apps might allow someone to access your files and download new files to your computer."
+            },
+            {
+                "title": "Applications suspected as Key logging tools:",
+                "index": 2,
+                "warning": "These apps might allow someone to log all of your keyboard keystrokes - and therefore extract your passwords, credit card details and more..."
+            },
+            {
+                "title": "Applications suspected as Server Hosting tools:",
+                "index": 3,
+                "warning": "These apps might allow someone to access some of your files, execute malicious files on your computer, or upload files depending on your configuration."
+            }
+        ]
+
+        any_flagged = False
+
+        for cat in categories:
+            # Filter results where the specific risk bit is True
             flagged_apps = [
-                result["name"] for result in self.analysis_results
-                if result.get("risk_vector", [False]*4)[idx]
+                res["name"] for res in self.analysis_results 
+                if res.get("risk_vector", [False]*4)[cat["index"]]
             ]
-            
-            # Display risk category section
-            self.append_result(f"\n[{label}]")
+
             if flagged_apps:
-                self.append_result(f"  Status: FLAGGED - {len(flagged_apps)} app(s) detected")
+                any_flagged = True
+                self.append_result(cat["title"])
                 for app_name in flagged_apps:
-                    self.append_result(f"    • {app_name}")
-            else:
-                self.append_result(f"  Status: CLEAR - No apps detected with this capability")
+                    self.append_result(f" • {app_name}")
+                self.append_result(cat["warning"] + "\n")
+
+        # If no categories had any apps
+        if not any_flagged:
+            self.append_result("The scan was completed without finding any suspicious files and programs.")
         
         self.append_result("\n" + "=" * 70)
         self.append_result("✓ Analysis complete")
         self.append_result("=" * 70)
+        
         self.stop_loading(kind="analysis")
     
     def _run_analysis(self, app):
@@ -448,24 +472,65 @@ class AppsAnalystGUI:
                 if self.exe_label.winfo_ismapped():
                     self.exe_label.pack_forget()
 
-    # ---------- Export helpers ----------
+# ---------- Export helpers ----------
     def on_export_csv(self):
         if not self.analysis_results:
             messagebox.showwarning("No Data", "No analysis results to export.")
             return
+        
         from tkinter import filedialog
         path = filedialog.asksaveasfilename(defaultextension='.csv', filetypes=[('CSV files','*.csv')])
         if not path:
             return
+            
         import csv
         try:
             with open(path, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerow(['name','remote_admin','remote_file_sharing','keylogging','server_hosting','llm_text'])
-                for r in self.analysis_results:
-                    vec = r.get('risk_vector', [False,False,False,False])
-                    writer.writerow([r.get('name'), int(vec[0]), int(vec[1]), int(vec[2]), int(vec[3]), r.get('llm_text','')])
-            messagebox.showinfo('Export CSV','CSV saved successfully.')
+                writer = csv.csv.writer(f)
+                
+                # Adding standard CSV headers for usefulness
+                writer.writerow(["Risk Category", "Suspected Application", "Risk Description"])
+                
+                categories = [
+                    {
+                        "title": "Remote Administration",
+                        "index": 0,
+                        "warning": "These apps might allow someone to view your screen, control your mouse, keyboard, and even disable your input, as well as give them full access to your files and download new files to your computer."
+                    },
+                    {
+                        "title": "Remote File Sharing",
+                        "index": 1,
+                        "warning": "These apps might allow someone to access your files and download new files to your computer."
+                    },
+                    {
+                        "title": "Keylogging",
+                        "index": 2,
+                        "warning": "These apps might allow someone to log all of your keyboard keystrokes - and therefore extract your passwords, credit card details and more..."
+                    },
+                    {
+                        "title": "Server Hosting",
+                        "index": 3,
+                        "warning": "These apps might allow someone to access some of your files, execute malicious files on your computer, or upload files depending on your configuration."
+                    }
+                ]
+
+                any_flagged = False
+
+                for cat in categories:
+                    flagged_apps = [
+                        res["name"] for res in self.analysis_results 
+                        if res.get("risk_vector", [False]*4)[cat["index"]]
+                    ]
+
+                    if flagged_apps:
+                        any_flagged = True
+                        for app_name in flagged_apps:
+                            writer.writerow([cat["title"], app_name, cat["warning"]])
+
+                if not any_flagged:
+                    writer.writerow(["All Clear", "None", "The scan was completed without finding any suspicious files and programs."])
+                    
+            messagebox.showinfo('Export CSV', 'CSV saved successfully.')
         except Exception as e:
             messagebox.showerror('Export CSV', str(e))
 
@@ -473,43 +538,87 @@ class AppsAnalystGUI:
         if not self.analysis_results:
             messagebox.showwarning("No Data", "No analysis results to export.")
             return
+            
         from tkinter import filedialog
         path = filedialog.asksaveasfilename(defaultextension='.pdf', filetypes=[('PDF files','*.pdf')])
         if not path:
             return
-        # Try to use reportlab if available
+            
+        # Try to use reportlab's advanced formatting features
         try:
             from reportlab.lib.pagesizes import letter
-            from reportlab.pdfgen import canvas
+            from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+            from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+            from reportlab.lib import colors
         except Exception:
             messagebox.showerror('Export PDF', 'reportlab is required to export PDF. Install with: pip install reportlab')
             return
+            
         try:
-            c = canvas.Canvas(path, pagesize=letter)
-            width, height = letter
-            y = height - 40
-            c.setFont('Helvetica-Bold', 14)
-            c.drawString(40, y, 'AppsAnalyst - Analysis Results')
-            y -= 30
-            c.setFont('Helvetica', 10)
-            for r in self.analysis_results:
-                if y < 80:
-                    c.showPage()
-                    y = height - 40
-                c.drawString(40, y, f"Name: {r.get('name')}")
-                y -= 14
-                vec = r.get('risk_vector', [False,False,False,False])
-                labels = ['Remote Administration','Remote File Sharing','Keylogging','Server Hosting']
-                for lab, v in zip(labels, vec):
-                    status = 'YES' if v else 'no'
-                    c.drawString(60, y, f"{lab}: {status}")
-                    y -= 12
-                y -= 8
-            c.save()
-            messagebox.showinfo('Export PDF','PDF saved successfully.')
+            doc = SimpleDocTemplate(path, pagesize=letter)
+            styles = getSampleStyleSheet()
+            
+            # Create custom professional styles
+            title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], alignment=1, spaceAfter=20)
+            category_style = ParagraphStyle('CategoryStyle', parent=styles['Heading2'], textColor=colors.darkred, spaceAfter=6)
+            warning_style = ParagraphStyle('WarningStyle', parent=styles['Normal'], fontName='Helvetica-Oblique', spaceAfter=15)
+            app_style = ParagraphStyle('AppStyle', parent=styles['Normal'], leftIndent=20, spaceAfter=4, fontName='Helvetica-Bold')
+            success_style = ParagraphStyle('SuccessStyle', parent=styles['Heading2'], textColor=colors.green, alignment=1)
+            
+            elements = []
+            
+            # Title
+            elements.append(Paragraph("AppsAnalyst - Final Security Report", title_style))
+            
+            categories = [
+                {
+                    "title": "Applications suspected as Remote administration tools:",
+                    "index": 0,
+                    "warning": "These apps might allow someone to view your screen, control your mouse, keyboard, and even disable your input, as well as give them full access to your files and download new files to your computer."
+                },
+                {
+                    "title": "Applications suspected as Remote File Sharing tools:",
+                    "index": 1,
+                    "warning": "These apps might allow someone to access your files and download new files to your computer."
+                },
+                {
+                    "title": "Applications suspected as Key logging tools:",
+                    "index": 2,
+                    "warning": "These apps might allow someone to log all of your keyboard keystrokes - and therefore extract your passwords, credit card details and more..."
+                },
+                {
+                    "title": "Applications suspected as Server Hosting tools:",
+                    "index": 3,
+                    "warning": "These apps might allow someone to access some of your files, execute malicious files on your computer, or upload files depending on your configuration."
+                }
+            ]
+
+            any_flagged = False
+
+            for cat in categories:
+                flagged_apps = [
+                    res["name"] for res in self.analysis_results 
+                    if res.get("risk_vector", [False]*4)[cat["index"]]
+                ]
+
+                if flagged_apps:
+                    any_flagged = True
+                    elements.append(Paragraph(cat["title"], category_style))
+                    for app_name in flagged_apps:
+                        # Escape special characters so XML parsing doesn't break
+                        safe_name = app_name.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                        elements.append(Paragraph(f"• {safe_name}", app_style))
+                    elements.append(Spacer(1, 6))
+                    elements.append(Paragraph(cat["warning"], warning_style))
+
+            if not any_flagged:
+                elements.append(Spacer(1, 30))
+                elements.append(Paragraph("The scan was completed without finding any suspicious files and programs.", success_style))
+
+            doc.build(elements)
+            messagebox.showinfo('Export PDF', 'PDF saved successfully.')
         except Exception as e:
             messagebox.showerror('Export PDF', str(e))
-
 
 def run_gui():
     root = tk.Tk()

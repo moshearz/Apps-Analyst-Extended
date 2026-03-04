@@ -6,7 +6,7 @@ def search_web_info(app_name):
     
     with DDGS() as ddgs:
         # שליפת התוצאות הראשונות
-        results = ddgs.text(query, max_results=10, backend="google", region='us-en')
+        results = ddgs.text(query, max_results=10, backend="duckduckgo", region='us-en')
         
         extracted_info = ""
         for r in results:
