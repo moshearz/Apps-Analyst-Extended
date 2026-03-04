@@ -246,11 +246,15 @@ class AppsAnalystGUI:
                     self.stop_loading(kind="analysis")
                 ))
         except Exception as e:
-            self.root.after(0, lambda: (
-                self.append_result(f"[!] LLM initialization error: {str(e)}"),
+            # 1. Capture the error message as a string immediately
+            error_msg = str(e)
+            
+            # 2. Use 'err=error_msg' to "freeze" the value inside the lambda
+            self.root.after(0, lambda err=error_msg: (
+                self.append_result(f"[!] LLM initialization error: {err}"),
                 self.stop_loading(kind="analysis")
             ))
-    
+
     def analyze_next(self):
         if self.analyzing_index >= len(self.selected_apps):
             # All analyses complete; generate and display final report

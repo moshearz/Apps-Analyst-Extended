@@ -1,15 +1,43 @@
 # from config import load_config
+import sys
+import subprocess
+import pkg_resources 
 
 # dummy constants for debug substitutions
-
-
 DUMMY_REGISTRY_APPS = [{"name": "checkpointVPN", "version": "1.0"},{"name": "teamviewer", "version": "1.0"}, {"name": "vnc", "version": "2.0"}]
 DUMMY_EXE_APPS = [{"name": "dummy.exe", "install_location": "C:\\dummy.exe"}]
 DUMMY_WEB_INFO = "- Title: Dummy\n  Info: No real data\n"
 DUMMY_LLM_RESPONSE = "Remote Administration: no\nRemote File Sharing: no\nKeylogging: no\nServer Hosting: no"
 
 def install_missing_requirements():
-    """בודק אם כל החבילות ב-requirements.txt מותקנות, ואם לא - מתקין אותן."""
+    requirements_file = "requirements.txt"
+    try:
+        import pkg_resources
+        with open(requirements_file, "r") as f:
+            requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
+        
+        missing = []
+        for requirement in requirements:
+            try:
+                pkg_resources.require(requirement)
+            except (pkg_resources.DistributionNotFound, pkg_resources.VersionConflict):
+                missing.append(requirement)
+        
+        if missing:
+            print(f"[*] Missing packages found: {missing}. Installing...")
+            try:
+                # Adding --user handles the Permission Denied error automatically
+                subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", *missing])
+                print("[*] All packages installed successfully.")
+            except subprocess.CalledProcessError:
+                print("[!] Pip installation failed. Try running as Administrator.")
+        else:
+            print("[*] All requirements are already met.")
+            
+    except FileNotFoundError:
+        print("[!] requirements.txt not found. Skipping auto-install.")
+    except Exception as e:
+        print(f"[!] Auto-install failed: {e}") 
     requirements_file = "requirements.txt"
     
     try:
@@ -37,6 +65,7 @@ def install_missing_requirements():
         print("[!] requirements.txt not found. Skipping auto-install.")
     except Exception as e:
         print(f"[!] Auto-install failed: {e}")
+
 
 def setup_llm():
     # Initialize LLM: check and pull model if needed
@@ -105,14 +134,14 @@ def main():
     # step 1: load configuration (not implemented yet)
 
     # step 2: scan registry and filesystem for apps
-    # registry_apps, exe_apps = scan_apps()    
+    registry_apps, exe_apps = scan_apps()    
     # Uncomment to skip step 2: 
     # registry_apps, exe_apps = DUMMY_REGISTRY_APPS, DUMMY_EXE_APPS
 
     # step 3: let user pick an application to analyze
-    # app_to_analyze = select_app(registry_apps, exe_apps)  # or: app_to_analyze = registry_apps[0]
+    app_to_analyze = select_app(registry_apps, exe_apps)  # or: app_to_analyze = registry_apps[0]
     # Uncomment to skip step 3: 
-    app_to_analyze = DUMMY_REGISTRY_APPS[0]
+    # app_to_analyze = DUMMY_REGISTRY_APPS[0]
     #or all of the dumm apps:
     
     
