@@ -1,3 +1,6 @@
+import sys
+import subprocess
+
 # from config import load_config
 
 # dummy constants for debug substitutions
@@ -9,23 +12,33 @@ DUMMY_WEB_INFO = "- Title: Dummy\n  Info: No real data\n"
 DUMMY_LLM_RESPONSE = "Remote Administration: no\nRemote File Sharing: no\nKeylogging: no\nServer Hosting: no"
 
 def install_missing_requirements():
-    """בודק אם כל החבילות ב-requirements.txt מותקנות, ואם לא - מתקין אותן."""
+    """Check requirements and install missing packages without pkg_resources.
+    
+    Uses importlib.metadata (standard library 3.8+) to check installed packages.
+    Falls back to direct import attempts if metadata is unavailable.
+    """
     requirements_file = "requirements.txt"
     
     try:
-        # קריאת הדרישות מהקובץ
         with open(requirements_file, "r") as f:
             requirements = [line.strip() for line in f if line.strip() and not line.startswith("#")]
         
-        # זיהוי חבילות חסרות
         missing = []
         for requirement in requirements:
+            # Extract package name (handle ==, >=, <= operators)
+            pkg_name = requirement.split("==")[0].split(">=")[0].split("<=")[0].strip()
+            
             try:
-                pkg_resources.require(requirement)
-            except (pkg_resources.DistributionNotFound, pkg_resources.VersionConflict):
+                # Try importlib.metadata first (Python 3.8+)
+                try:
+                    from importlib import metadata
+                    metadata.version(pkg_name)
+                except (ImportError, Exception):
+                    # Fallback: try direct import
+                    __import__(pkg_name)
+            except Exception:
                 missing.append(requirement)
         
-        # התקנת החסר
         if missing:
             print(f"[*] Missing packages found: {missing}. Installing...")
             subprocess.check_call([sys.executable, "-m", "pip", "install", *missing])

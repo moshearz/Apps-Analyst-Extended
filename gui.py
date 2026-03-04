@@ -4,7 +4,6 @@ import threading
 from main import scan_apps, research_web, run_llm, parse_result, install_missing_requirements
 import sys
 import subprocess
-import pkg_resources
 
 
 class AppsAnalystGUI:
@@ -246,8 +245,9 @@ class AppsAnalystGUI:
                     self.stop_loading(kind="analysis")
                 ))
         except Exception as e:
+            error_msg = str(e)
             self.root.after(0, lambda: (
-                self.append_result(f"[!] LLM initialization error: {str(e)}"),
+                self.append_result(f"[!] LLM initialization error: {error_msg}"),
                 self.stop_loading(kind="analysis")
             ))
     
