@@ -30,7 +30,7 @@ Server Hosting: [yes/no] ## Explanation: your reason ##"""
     # Send to ollama model gemma3:1b and print the result
     try:
         response = ollama.chat(
-            model="llama3.2:1b",
+            model="gemma3:1b",
             messages=[
                 {'role': 'system', 'content': system_instruction},
                 {'role': 'user', 'content': user_prompt}

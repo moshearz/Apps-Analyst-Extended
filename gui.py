@@ -234,25 +234,32 @@ class AppsAnalystGUI:
         self.start_loading(kind="analysis")
     
     def _initialize_and_analyze(self):
-        """Initialize LLM, then proceed with analysis if successful"""
-        try:
-            from main import setup_llm
-            if setup_llm():
-                self.root.after(0, self.analyze_next)
-            else:
-                self.root.after(0, lambda: (
-                    self.append_result("[!] Failed to initialize LLM"),
+            def progress_handler(msg, update_last=False):
+                # Ensure UI updates happen on the main thread
+                self.root.after(0, lambda: self.append_result(msg, overwrite_last=update_last))
+
+            try:
+                from main import setup_llm
+                result = setup_llm(progress_callback=progress_handler)
+                
+                if result is True:
+                    self.root.after(0, self.analyze_next)
+                elif result == "ERROR_OLLAMA_OFFLINE":
+                    self.root.after(0, lambda: (
+                        self.append_result("[!] Error: Ollama is not running!"),
+                        self.stop_loading(kind="analysis")
+                    ))
+                else:
+                    self.root.after(0, lambda r=result: (
+                        self.append_result(f"[!] LLM initialization error: {r}"),
+                        self.stop_loading(kind="analysis")
+                    ))
+            except Exception as e:
+                error_msg = str(e)
+                self.root.after(0, lambda err=error_msg: (
+                    self.append_result(f"[!] Unexpected error: {err}"),
                     self.stop_loading(kind="analysis")
                 ))
-        except Exception as e:
-            # 1. Capture the error message as a string immediately
-            error_msg = str(e)
-            
-            # 2. Use 'err=error_msg' to "freeze" the value inside the lambda
-            self.root.after(0, lambda err=error_msg: (
-                self.append_result(f"[!] LLM initialization error: {err}"),
-                self.stop_loading(kind="analysis")
-            ))
 
     def analyze_next(self):
         if self.analyzing_index >= len(self.selected_apps):
@@ -340,11 +347,17 @@ class AppsAnalystGUI:
             if self.analyzing_index >= len(self.selected_apps):
                 self.root.after(0, lambda: self.stop_loading(kind="analysis"))
     
-    def append_result(self, text):
-        self.results_text.config(state=tk.NORMAL)
-        self.results_text.insert(tk.END, text + "\n")
-        self.results_text.see(tk.END)
-        self.results_text.config(state=tk.DISABLED)
+    def append_result(self, text, overwrite_last=False):
+            self.results_text.config(state=tk.NORMAL)
+            if overwrite_last:
+                # Delete from the start of the last line to the end
+                self.results_text.delete("end-2l", "end-1c")
+                self.results_text.insert(tk.END, "\n" + text)
+            else:
+                self.results_text.insert(tk.END, text + "\n")
+            
+            self.results_text.see(tk.END)
+            self.results_text.config(state=tk.DISABLED)
     
     def on_clear_clicked(self):
         self.results_text.config(state=tk.NORMAL)

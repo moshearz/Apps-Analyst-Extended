@@ -4,7 +4,9 @@ import subprocess
 # from config import load_config
 import sys
 import subprocess
-import pkg_resources 
+import pkg_resources
+
+from utils.llm_setup import check_and_pull_model 
 
 # dummy constants for debug substitutions
 DUMMY_REGISTRY_APPS = [{"name": "checkpointVPN", "version": "1.0"},{"name": "teamviewer", "version": "1.0"}, {"name": "vnc", "version": "2.0"}]
@@ -75,13 +77,11 @@ def install_missing_requirements():
     except Exception as e:
         print(f"[!] Auto-install failed: {e}")
 
-
-def setup_llm():
+def setup_llm(progress_callback=None):
     # Initialize LLM: check and pull model if needed
     from utils.llm_setup import check_and_pull_model
     print("[i] Setting up LLM...")
-    return check_and_pull_model()
-
+    return check_and_pull_model(progress_callback=progress_callback)
 
 def scan_apps():
     from collectors.win_apps_scanner import WinAppsScanner
