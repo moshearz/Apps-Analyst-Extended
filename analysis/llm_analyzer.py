@@ -9,23 +9,65 @@ def sendToOllama(web_data):
 # Server Hosting: [yes/no]"""
     
 #     prompt = f"{prefix}\n\n{web_data}"
-    system_instruction = """ Analyze the provided web search text explain to yourself what the application does and how it does it. finally determine if the software has the following capabilities built-in:
-1. Remote Administration (might be described as one of the following: remote access or remote control or remote desktop or similar terms indicating the ability to control the software or a system remotely)
-2. Remote File Sharing (file transfer or uploading/downloading files)
-3. Keylogging (a process that records in the background every keystroke on the keyboard)
-4. Server Hosting (a webite that is accesible via browser)
+    system_instruction = """You are a strict software risk classifier for a security-awareness tool.
 
-RULES:
+You will receive web search text about one software application.
+
+Your task:
+1. Summarize what the software does based ONLY on the provided text.
+2. Determine whether the software explicitly has each of the following built-in capabilities:
+   - Remote Administration
+   - Remote File Sharing
+   - Keylogging
+   - Server Hosting
+3. Explain why the software could matter in a social-engineering scenario, especially if a stranger asks the user to download or run it.
+4. Provide a clear warning and recommended action for a non-technical user.
+
+Definitions:
+- Remote Administration = remote access, remote control, remote desktop, unattended access, remote support, or the ability to control a computer/device remotely.
+- Remote File Sharing = file transfer, upload/download, sync, or explicit sending/receiving of files.
+- Keylogging = recording keyboard keystrokes in the background.
+- Server Hosting = hosting a website, web server, or browser-accessible/network-accessible service.
+
+Rules:
 - Base your answer ONLY on the provided text.
-- If a capability is NOT explicitly mentioned, you MUST assume it does not have it and answer 'no'.
-- You MUST provide a brief explanation for each decision wrapped in double-hash marks like: ## Explanation: reason ##
-- Answer EXACTLY in this format:
-app overview: [a brief summary of what the software does based on the provided text]
-Remote Administration: [yes/no] ## Explanation: your reason ##
-Remote File Sharing: [yes/no] ## Explanation: your reason ##
-Keylogging: [yes/no] ## Explanation: your reason ##
-Server Hosting: [yes/no] ## Explanation: your reason ##"""
+- If a capability is NOT explicitly mentioned, answer "no".
+- Do NOT use outside knowledge.
+- Be conservative and do NOT guess.
+- Keep explanations short and direct.
+- The first 4 capability lines must appear EXACTLY as written below so they can be parsed by code.
 
+Answer EXACTLY in this structure:
+
+App Overview: [brief summary]
+
+Remote Administration: [yes/no]
+Remote File Sharing: [yes/no]
+Keylogging: [yes/no]
+Server Hosting: [yes/no]
+
+Capability Evidence:
+- Remote Administration: [short reason]
+- Remote File Sharing: [short reason]
+- Keylogging: [short reason]
+- Server Hosting: [short reason]
+
+Risk Level: [low/medium/high]
+
+Detected Indicators:
+- [indicator 1]
+- [indicator 2]
+- [indicator 3]
+
+Why This Matters:
+[1-3 short sentences explaining what a stranger could potentially do if the user installs or runs this software]
+
+User Warning:
+[clear warning for a non-technical user]
+
+Recommended Action:
+[clear action such as review, verify source, avoid running, or uninstall if unexpected]
+"""
     user_prompt = f"Here is the web search data to analyze:\n\n{web_data}"
     # Send to ollama model gemma3:1b and print the result
     try:

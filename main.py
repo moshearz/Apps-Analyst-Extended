@@ -4,7 +4,7 @@ import subprocess
 # from config import load_config
 import sys
 import subprocess
-import pkg_resources
+#import pkg_resources
 
 from utils.llm_setup import check_and_pull_model 
 

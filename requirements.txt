@@ -6,3 +6,4 @@ ollama
 ddgs
 tqdm
 reportlab
+setuptools
