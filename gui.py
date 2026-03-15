@@ -830,7 +830,8 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "No data", "Analyze at least one app before exporting.")
             return
         if options.format == "pdf":
-            path, _ = QFileDialog.getSaveFileName(self, "Export PDF", "apps_analyst_report.pdf", "PDF files (*.pdf)")
+            default_pdf_name = f"Apps-Analyst_Report_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.pdf"
+            path, _ = QFileDialog.getSaveFileName(self, "Export PDF", default_pdf_name, "PDF files (*.pdf)")
             if not path:
                 return
             exporter = ExportService.export_pdf
