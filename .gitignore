@@ -159,3 +159,7 @@ secrets.json
 config.local.json
 *.key
 *.pem
+
+# Generated project reports
+*.csv
+*.pdf
