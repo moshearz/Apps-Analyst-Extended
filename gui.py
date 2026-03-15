@@ -639,8 +639,6 @@ class ReportPage(QWidget):
 
     def __init__(self) -> None:
         super().__init__()
-        self.range_buttons: dict[str, QPushButton] = {}
-
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(18)
@@ -657,23 +655,6 @@ class ReportPage(QWidget):
         subtitle.setObjectName("Muted")
         subtitle.setWordWrap(True)
         layout.addWidget(subtitle)
-
-        range_title = QLabel("Select time range")
-        range_title.setObjectName("SectionTitle")
-        layout.addWidget(range_title)
-        row = QHBoxLayout()
-        self.range_group = QButtonGroup(self)
-        self.range_group.setExclusive(True)
-        for name in ["Last 24h", "Last 7 days", "All results"]:
-            button = QPushButton(name)
-            button.setCheckable(True)
-            if name == "All results":
-                button.setChecked(True)
-            self.range_buttons[name] = button
-            self.range_group.addButton(button)
-            row.addWidget(button)
-        row.addStretch(1)
-        layout.addLayout(row)
 
         sections = QLabel("Report sections")
         sections.setObjectName("SectionTitle")
@@ -716,9 +697,7 @@ class ReportPage(QWidget):
         self.set_summary(0, 0, 0, 0)
 
     def options(self, export_format: str) -> ExportOptions:
-        selected_range = next((name for name, button in self.range_buttons.items() if button.isChecked()), "All results")
         return ExportOptions(
-            time_range=selected_range,
             include_summary=self.summary_check.isChecked(),
             include_detailed_risks=self.detailed_check.isChecked(),
             include_system_log=self.system_log_check.isChecked(),
@@ -785,16 +764,6 @@ class MainWindow(QMainWindow):
             self.nav_buttons[key] = button
             sidebar_layout.addWidget(button)
         sidebar_layout.addStretch(1)
-        account = QFrame()
-        account.setObjectName("Card")
-        account_layout = QVBoxLayout(account)
-        account_layout.setContentsMargins(14, 14, 14, 14)
-        account_layout.setSpacing(6)
-        account_layout.addWidget(QLabel("Admin User"))
-        plan = QLabel("Enterprise plan")
-        plan.setObjectName("Muted")
-        account_layout.addWidget(plan)
-        sidebar_layout.addWidget(account)
         shell.addWidget(sidebar)
 
         content = QWidget()
