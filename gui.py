@@ -306,6 +306,8 @@ class AnalysisPage(QWidget):
         self.results: dict[str, RiskAssessment] = {}
         self.filtered_ids: list[str] = []
         self.record_lookup: dict[str, AppRecord] = {}
+        self.checked_record_ids: set[str] = set()
+        self._focused_record_id: str | None = None
 
         root = QHBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -322,6 +324,8 @@ class AnalysisPage(QWidget):
         title.setObjectName("SectionTitle")
         row.addWidget(title)
         row.addStretch(1)
+        self.clear_selection_button = QPushButton("Clear selection")
+        row.addWidget(self.clear_selection_button)
         self.analyze_selected_button = QPushButton("Analyze selected")
         self.analyze_selected_button.setObjectName("PrimaryButton")
         row.addWidget(self.analyze_selected_button)
@@ -329,17 +333,19 @@ class AnalysisPage(QWidget):
         self.search = QLineEdit()
         self.search.setPlaceholderText("Search apps, paths, or publishers...")
         left_layout.addWidget(self.search)
-        self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(["App", "Source", "Version", "Status"])
+        self.table = QTableWidget(0, 5)
+        self.table.setHorizontalHeaderLabels(["", "App", "Source", "Version", "Status"])
         self.table.verticalHeader().setVisible(False)
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
-        self.table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
-        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.setColumnWidth(0, 36)
         left_layout.addWidget(self.table, 1)
-        self.selection_hint = QLabel("Select one or more rows to analyze.")
+        self.selection_hint = QLabel("Mark suspicious apps with the checkboxes, then click Analyze selected.")
         self.selection_hint.setObjectName("Muted")
         left_layout.addWidget(self.selection_hint)
         root.addWidget(left, 5)
@@ -401,10 +407,13 @@ class AnalysisPage(QWidget):
         right_layout.addLayout(action_row)
         root.addWidget(right, 6)
 
-        self.search.textChanged.connect(self._apply_filter)
+        self.search.textChanged.connect(lambda _text: self._apply_filter())
         self.table.itemSelectionChanged.connect(self._emit_focus)
+        self.table.itemChanged.connect(self._handle_item_changed)
+        self.clear_selection_button.clicked.connect(self._clear_selection)
         self.analyze_selected_button.clicked.connect(self._emit_analyze_selected)
         self.analyze_current_button.clicked.connect(self._emit_analyze_current)
+        self._update_selection_state()
 
     def _detail_box(self, title: str, parent_layout: QVBoxLayout, min_height: int) -> QTextEdit:
         label = QLabel(title)
@@ -417,23 +426,20 @@ class AnalysisPage(QWidget):
         return box
 
     def set_apps(self, apps: list[AppRecord], results: dict[str, RiskAssessment]) -> None:
-        previous_selection = self.selected_ids()
+        previous_checked = list(self.checked_record_ids)
+        previous_focus = self._focused_record_id
         self.apps = apps
         self.results = results
         self.record_lookup = {app.record_id: app for app in apps}
-        self._apply_filter()
-        for record_id in previous_selection:
-            if record_id in self.filtered_ids:
-                self.select_record(record_id)
-                break
+        self.checked_record_ids = {record_id for record_id in previous_checked if record_id in self.record_lookup}
+        self._apply_filter(previous_focus)
 
     def set_search_text(self, text: str) -> None:
         if self.search.text() != text:
             self.search.setText(text)
 
     def selected_ids(self) -> list[str]:
-        rows = sorted({item.row() for item in self.table.selectedItems()})
-        return [self.filtered_ids[row] for row in rows if 0 <= row < len(self.filtered_ids)]
+        return [app.record_id for app in self.apps if app.record_id in self.checked_record_ids]
 
     def select_record(self, record_id: str) -> None:
         if not record_id:
@@ -444,14 +450,29 @@ class AnalysisPage(QWidget):
         if record_id not in self.filtered_ids:
             return
         row = self.filtered_ids.index(record_id)
+        self.table.setCurrentCell(row, 1)
         self.table.selectRow(row)
+        self._focused_record_id = record_id
         self.show_detail(record_id)
+        self.focus_requested.emit(record_id)
+
+    def show_empty_detail(self) -> None:
+        self.badge.setText("Not analyzed")
+        self.badge.setStyleSheet(chip_style("#1e293b", "#cbd5e1"))
+        self.detail_title.setText("Select an application")
+        self.detail_meta.setText("App metadata and AI findings will appear here.")
+        self.overview.setText("No AI analysis has been run for this application yet.")
+        self.evidence.setText("Click a row to inspect it, or mark suspicious apps with the checkboxes for batch analysis.")
+        self.impact.setText("Potential impact details will appear after analysis.")
+        self.guidance.setText("Use Analyze selected to analyze only the apps you explicitly checked.")
+        for widget, name in zip(self.capability_labels, CAPABILITY_LABELS):
+            widget.setText(f"{name}: Unknown")
+            widget.setStyleSheet("background: #0f172a; border-radius: 12px; padding: 12px; border: 1px solid #243045;")
 
     def show_detail(self, record_id: str) -> None:
         app = self.record_lookup.get(record_id)
         if not app:
-            self.detail_title.setText("Select an application")
-            self.detail_meta.setText("App metadata and AI findings will appear here.")
+            self.show_empty_detail()
             return
         assessment = self.results.get(record_id)
         self.detail_title.setText(app.name)
@@ -481,14 +502,14 @@ class AnalysisPage(QWidget):
             self.badge.setText("Not analyzed")
             self.badge.setStyleSheet(chip_style("#1e293b", "#cbd5e1"))
             self.overview.setText("No AI analysis has been run for this application yet.")
-            self.evidence.setText("Select Analyze focused app or Analyze selected to populate this panel.")
+            self.evidence.setText("Use Analyze focused app for this row, or Analyze selected for the checked apps.")
             self.impact.setText("Potential impact details will appear after analysis.")
             self.guidance.setText("Use the analysis actions to generate a risk assessment.")
             for widget, name in zip(self.capability_labels, CAPABILITY_LABELS):
                 widget.setText(f"{name}: Unknown")
                 widget.setStyleSheet("background: #0f172a; border-radius: 12px; padding: 12px; border: 1px solid #243045;")
 
-    def _apply_filter(self) -> None:
+    def _apply_filter(self, focus_record_id: str | None = None) -> None:
         query = self.search.text().strip().lower()
         visible = [
             app for app in self.apps
@@ -499,24 +520,60 @@ class AnalysisPage(QWidget):
             or query in app.source_kind.lower()
         ]
         self.filtered_ids = [app.record_id for app in visible]
+        self.table.blockSignals(True)
         self.table.setRowCount(len(visible))
         for row, app in enumerate(visible):
+            checkbox_item = QTableWidgetItem()
+            checkbox_item.setFlags(
+                Qt.ItemFlag.ItemIsEnabled
+                | Qt.ItemFlag.ItemIsUserCheckable
+                | Qt.ItemFlag.ItemIsSelectable
+            )
+            checkbox_item.setCheckState(
+                Qt.CheckState.Checked if app.record_id in self.checked_record_ids else Qt.CheckState.Unchecked
+            )
+            self.table.setItem(row, 0, checkbox_item)
             assessment = self.results.get(app.record_id)
-            set_cell(self.table, row, 0, app.name)
-            set_cell(self.table, row, 1, app.source_kind)
-            set_cell(self.table, row, 2, app.version)
+            set_cell(self.table, row, 1, app.name)
+            set_cell(self.table, row, 2, app.source_kind)
+            set_cell(self.table, row, 3, app.version)
             status = "Not analyzed" if not assessment else assessment.risk_level.title()
             color = None if not assessment else QColor("#fca5a5" if assessment.risk_level == "high" else "#fde68a" if assessment.risk_level == "medium" else "#86efac")
-            set_cell(self.table, row, 3, status, color)
-        self.selection_hint.setText(f"{len(visible)} applications shown" if visible else "No applications match the current search")
+            set_cell(self.table, row, 4, status, color)
+        self.table.blockSignals(False)
         if not visible:
-            self.show_detail("")
+            self._focused_record_id = None
+            self._update_selection_state()
+            self.show_empty_detail()
+            return
+        if focus_record_id and focus_record_id in self.filtered_ids:
+            row = self.filtered_ids.index(focus_record_id)
+            self.table.setCurrentCell(row, 1)
+            self.table.selectRow(row)
+            self._focused_record_id = focus_record_id
+            self.show_detail(focus_record_id)
+        elif self._focused_record_id and self._focused_record_id in self.filtered_ids:
+            row = self.filtered_ids.index(self._focused_record_id)
+            self.table.setCurrentCell(row, 1)
+            self.table.selectRow(row)
+            self.show_detail(self._focused_record_id)
+        else:
+            self.table.clearSelection()
+            self._focused_record_id = None
+            self.show_empty_detail()
+        self._update_selection_state()
 
     def _emit_focus(self) -> None:
-        selected = self.selected_ids()
-        if selected:
-            self.show_detail(selected[0])
-            self.focus_requested.emit(selected[0])
+        current_row = self.table.currentRow()
+        if current_row < 0 or current_row >= len(self.filtered_ids):
+            self._focused_record_id = None
+            self._update_selection_state()
+            self.show_empty_detail()
+            return
+        self._focused_record_id = self.filtered_ids[current_row]
+        self._update_selection_state()
+        self.show_detail(self._focused_record_id)
+        self.focus_requested.emit(self._focused_record_id)
 
     def _emit_analyze_selected(self) -> None:
         selected = self.selected_ids()
@@ -524,9 +581,56 @@ class AnalysisPage(QWidget):
             self.analyze_requested.emit(selected)
 
     def _emit_analyze_current(self) -> None:
-        selected = self.selected_ids()
-        if selected:
-            self.analyze_requested.emit([selected[0]])
+        if self._focused_record_id:
+            self.analyze_requested.emit([self._focused_record_id])
+
+    def _clear_selection(self) -> None:
+        self.checked_record_ids.clear()
+        self.table.blockSignals(True)
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, 0)
+            if item is not None:
+                item.setCheckState(Qt.CheckState.Unchecked)
+        self.table.blockSignals(False)
+        self._update_selection_state()
+
+    def _handle_item_changed(self, item: QTableWidgetItem) -> None:
+        if item.column() != 0:
+            return
+        if not (0 <= item.row() < len(self.filtered_ids)):
+            return
+        record_id = self.filtered_ids[item.row()]
+        if item.checkState() == Qt.CheckState.Checked:
+            self.checked_record_ids.add(record_id)
+        else:
+            self.checked_record_ids.discard(record_id)
+        self._update_selection_state()
+
+    def _update_selection_state(self) -> None:
+        visible_count = len(self.filtered_ids)
+        selected_count = len(self.selected_ids())
+        has_selection = selected_count > 0
+        self.clear_selection_button.setEnabled(has_selection)
+        self.analyze_selected_button.setEnabled(has_selection)
+        self.analyze_current_button.setEnabled(self._focused_record_id is not None)
+        self.analyze_selected_button.setText(
+            f"Analyze selected ({selected_count})" if selected_count > 1 else "Analyze selected"
+        )
+        if not visible_count:
+            self.selection_hint.setText(
+                "No applications match the current search"
+                if not selected_count
+                else f"No applications match the current search | {selected_count} checked for analysis"
+            )
+            return
+        if selected_count:
+            self.selection_hint.setText(
+                f"{visible_count} applications shown | {selected_count} checked for analysis"
+            )
+            return
+        self.selection_hint.setText(
+            f"{visible_count} applications shown | Mark suspicious apps with the checkboxes, then click Analyze selected"
+        )
 
 
 class ReportPage(QWidget):
