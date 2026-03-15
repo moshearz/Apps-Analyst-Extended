@@ -7,3 +7,4 @@ ddgs
 tqdm
 reportlab
 setuptools
+PySide6

@@ -177,6 +177,7 @@ if __name__ == "__main__":
     import sys
     
     if len(sys.argv) > 1 and sys.argv[1] == "--gui":
+        install_missing_requirements()
         from gui import run_gui
         run_gui()
     else:
