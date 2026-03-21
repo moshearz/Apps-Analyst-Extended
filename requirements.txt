@@ -8,3 +8,4 @@ tqdm
 reportlab
 setuptools
 PySide6
+shiboken6 
