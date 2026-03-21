@@ -246,13 +246,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Disclaimer**: This tool is designed for security awareness and educational purposes. It is NOT a replacement for professional antivirus software or security solutions.
 
----
-
-## 📞 Contact
-
-**Project Author**: Moshe Arzuan
-**Institution**: Academic Project - Network Security Systems
-**Email**: [your.email@example.com]
 
 ### Support
 
