@@ -13,21 +13,25 @@ Apps-Analyst is an innovative security awareness tool that helps users identify 
 ## 🚀 Key Features
 
 ### 🔍 **Comprehensive System Scanning**
+
 - **Registry Analysis**: Scans Windows Registry for officially installed programs
 - **Filesystem Monitoring**: Detects portable executables in user directories
 - **Real-time Detection**: Identifies running processes and unauthorized installations
 
 ### 🤖 **AI-Powered Risk Assessment**
+
 - **Local LLM Analysis**: Uses Ollama with Gemma 3.1B for privacy-focused analysis
 - **Multi-dimensional Risk Evaluation**: Assesses 4 critical security categories
 - **Contextual Intelligence**: Understands social engineering attack patterns
 
 ### 📊 **Professional Reporting**
+
 - **Detailed PDF Reports**: Comprehensive security analysis with recommendations
 - **CSV Export**: Spreadsheet-compatible data for further analysis
 - **Interactive GUI**: User-friendly interface for non-technical users
 
 ### 🛡️ **Security Focus Areas**
+
 - **Remote Administration Tools**: TeamViewer, AnyDesk, VNC detection
 - **File Sharing Applications**: Unauthorized upload/download capabilities
 - **Keylogging Software**: Keystroke recording detection
@@ -60,12 +64,14 @@ Apps-Analyst is an innovative security awareness tool that helps users identify 
 ### Step-by-Step Setup
 
 1. **Clone the Repository**
+
    ```bash
    git clone https://github.com/yourusername/apps-analyst.git
    cd apps-analyst
    ```
 
 2. **Install Ollama and Model**
+
    ```bash
    # Install Ollama (if not already installed)
    # Download and run the installer from https://ollama.ai/download
@@ -75,8 +81,9 @@ Apps-Analyst is an innovative security awareness tool that helps users identify 
    ```
 
 3. **Install Python Dependencies**
+
    ```bash
-   pip install -r requirements.txt
+   python -m pip install --user --force-reinstall -r requirements.txt
    ```
 
 4. **Verify Installation**
@@ -89,16 +96,19 @@ Apps-Analyst is an innovative security awareness tool that helps users identify 
 ## 🚀 Quick Start
 
 ### GUI Mode (Recommended)
+
 ```bash
 python main.py --gui
 ```
 
 ### Command Line Mode
+
 ```bash
 python main.py
 ```
 
 ### First Run
+
 1. Launch the application
 2. Click "Scan System" to discover installed applications
 3. Select an application to analyze
@@ -166,12 +176,12 @@ Apps-Analyst/
 
 ### Risk Categories
 
-| Category | Description | Risk Level |
-|----------|-------------|------------|
-| **Remote Administration** | Remote desktop, VNC, TeamViewer-like tools | 🔴 High |
-| **Remote File Sharing** | File transfer, sync, sharing applications | 🟡 Medium |
-| **Keylogging** | Keystroke recording, monitoring software | 🔴 High |
-| **Server Hosting** | Web servers, hosting services | 🟡 Medium |
+| Category                  | Description                                | Risk Level |
+| ------------------------- | ------------------------------------------ | ---------- |
+| **Remote Administration** | Remote desktop, VNC, TeamViewer-like tools | 🔴 High    |
+| **Remote File Sharing**   | File transfer, sync, sharing applications  | 🟡 Medium  |
+| **Keylogging**            | Keystroke recording, monitoring software   | 🔴 High    |
+| **Server Hosting**        | Web servers, hosting services              | 🟡 Medium  |
 
 ### Risk Levels
 
@@ -182,6 +192,7 @@ Apps-Analyst/
 ### Social Engineering Context
 
 The tool specifically addresses:
+
 - **Tech Support Scams**: Fake Microsoft support calling users
 - **Malware Distribution**: Trojans disguised as legitimate tools
 - **Unauthorized Access**: Remote control without user consent
@@ -191,12 +202,14 @@ The tool specifically addresses:
 ## 📋 Requirements
 
 ### System Requirements
+
 - **OS**: Windows 10/11 (64-bit)
 - **RAM**: 4GB minimum, 8GB recommended
 - **Storage**: 2GB free space
 - **Network**: Internet connection for web research
 
 ### Python Dependencies
+
 ```
 requests>=2.25.0
 pyyaml>=5.4.0
@@ -210,6 +223,7 @@ setuptools>=50.0.0
 ```
 
 ### External Dependencies
+
 - **Ollama**: Local LLM runtime
 - **Gemma 3.1B**: AI model for analysis
 
@@ -246,7 +260,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Disclaimer**: This tool is designed for security awareness and educational purposes. It is NOT a replacement for professional antivirus software or security solutions.
 
-
 ### Support
 
 - **GitHub Issues**: For bug reports and feature requests
@@ -268,5 +281,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-*Last updated: March 2026*
-
+_Last updated: March 2026_
